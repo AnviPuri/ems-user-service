@@ -2,10 +2,9 @@ package com.ems.user.dto.request;
 
 public class EducationRequest {
 
-	// X/XII/Graduation/Post Graduation/ Other
 	private String degreeName;
 	private String specialisationName;
-	private String university;
+	private String institutionName;
 	private long startDate;
 	private long endDate;
 	private String percentage;
@@ -26,12 +25,12 @@ public class EducationRequest {
 		this.specialisationName = specialisationName;
 	}
 
-	public String getUniversity() {
-		return university;
+	public String getInstitutionName() {
+		return institutionName;
 	}
 
-	public void setUniversity(String university) {
-		this.university = university;
+	public void setInstitutionName(String institutionName) {
+		this.institutionName = institutionName;
 	}
 
 	public long getStartDate() {

@@ -12,6 +12,8 @@ import com.ems.user.dto.response.UserResponse;
 public interface UserService {
 
 	public UserResponse createUser(UserRequest userRequest);
+	
+	public List<UserResponse> createEmergencyUser(List<UserRequest> userRequestList);
 
 	public UserResponse updateUser(UserRequest userRequest);
 

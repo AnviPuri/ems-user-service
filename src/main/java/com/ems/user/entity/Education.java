@@ -17,7 +17,8 @@ public class Education {
 	@Column(name = "specialisation_name")
 	private String specialisationName;
 
-	private String university;
+	@Column(name = "institution_name")
+	private String institutionName;
 
 	@Column(name = "start_date")
 	private long startDate;
@@ -51,12 +52,12 @@ public class Education {
 		this.specialisationName = specialisationName;
 	}
 
-	public String getUniversity() {
-		return university;
+	public String getInstitutionName() {
+		return institutionName;
 	}
 
-	public void setUniversity(String university) {
-		this.university = university;
+	public void setInstitutionName(String institutionName) {
+		this.institutionName = institutionName;
 	}
 
 	public long getStartDate() {

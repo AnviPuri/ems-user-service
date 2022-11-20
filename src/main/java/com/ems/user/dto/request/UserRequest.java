@@ -16,8 +16,7 @@ public class UserRequest {
 	@NotNull
 	@NotBlank(message = "Email Id cant'be empty")
 	private String employeeId;
-	
-	// EMPLOYEE / CANDIDATE / EMERGENCY_CONTACT
+
 	@NotNull
 	@NotBlank(message = "User Type cant'be empty")
 	private String userType;
@@ -26,52 +25,53 @@ public class UserRequest {
 	@NotBlank(message = "First Name cant'be empty")
 	private String firstName;
 
-	private String middleName;
+	private String middleName = "";
 
-	private String lastName;
+	private String lastName = "";
 
-	private String gender;
+	private String gender = "";
 
-	// add validation check on if email id is valid
-	private String orgEmail;
+	// add validation check on if email id is valid?
+	private String orgEmail = "";
 
+	@NotNull
+	@NotBlank(message = "Personal Email cant'be empty")
 	private String personalEmail;
 
-	// add validation check on phone Number
+	// add validation check on phone Number if it is valid?
+	@NotNull
+	@NotBlank(message = "Country Code cant'be empty")
 	private String countryCode;
 
+	@NotNull
+	@NotBlank(message = "Phone Number cant'be empty")
 	private String phoneNumber;
 
-	private String officialDesignation;
+	private String officialDesignation = "";
 
-	private long dateOfJoining;
+	private long dateOfJoining = 0;
 
-	private long dateOfBirth;
+	private long dateOfBirth = 0;
 
-	private String bloodGroup;
+	private String bloodGroup = "";
 
-	// MARRIED / UNMARRIED
-	private String maritalStatus;
+	private String maritalStatus = "";
 
-	@Valid
-	@NotNull
 	private List<UserRequest> emergencyContactList = new ArrayList<>();
 
-	// SELF/MOTHER/FATHER/SPOUSE/OTHER
+	@NotNull
+	@NotBlank(message = "Relationship cant'be empty")
 	private String relationship;
 
-	@Valid
-	@NotNull
 	private List<AddressRequest> addressList = new ArrayList<>();
 
-	@Valid
-	@NotNull
 	private List<EducationRequest> educationList = new ArrayList<>();
 
-	// ACTIVE/INACTIVE
+	@NotNull
+	@NotBlank(message = "Status cant'be empty")
 	private String status;
 
-	private boolean isConsentAccepted;
+	private boolean isConsentAccepted = false;
 
 	public String getEmployeeId() {
 		return employeeId;

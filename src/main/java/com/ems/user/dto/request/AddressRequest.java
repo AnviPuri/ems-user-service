@@ -2,7 +2,6 @@ package com.ems.user.dto.request;
 
 public class AddressRequest {
 
-	// CURRENT / PERMANENT
 	private String addressType;
 	private String streetAddress;
 	private String city;
