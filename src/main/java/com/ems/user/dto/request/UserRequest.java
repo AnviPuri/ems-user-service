@@ -3,7 +3,6 @@ package com.ems.user.dto.request;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 
 import com.sun.istack.NotNull;
@@ -13,9 +12,7 @@ public class UserRequest {
 	// TO DO - ADD VALIDATION FOR FIELDS WITH SET VALUES
 	// TO DO - ADD VALIDATION CHECK FOR REQUIRED FIELDS
 
-	@NotNull
-	@NotBlank(message = "Email Id cant'be empty")
-	private String employeeId;
+	private String employeeId = "";
 
 	@NotNull
 	@NotBlank(message = "User Type cant'be empty")

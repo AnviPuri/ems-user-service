@@ -1,13 +1,22 @@
 package com.ems.user.dto.request;
 
-public class AddressRequest {
+public class AddressUpdateRequest {
 
+	private String addressId = "";
 	private String addressType = "";
 	private String streetAddress = "";
 	private String city = "";
 	private String state = "";
 	private String country = "";
 	private String pinCode = "";
+
+	public String getAddressId() {
+		return addressId;
+	}
+
+	public void setAddressId(String addressId) {
+		this.addressId = addressId;
+	}
 
 	public String getAddressType() {
 		return addressType;

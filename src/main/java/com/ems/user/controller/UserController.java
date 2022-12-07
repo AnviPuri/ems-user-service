@@ -1,15 +1,22 @@
 package com.ems.user.controller;
 
+import java.util.HashMap;
+
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ems.user.dto.request.UserRequest;
+import com.ems.user.dto.request.UserUpdateRequest;
 import com.ems.user.dto.response.UserResponse;
 import com.ems.user.service.UserService;
 
@@ -17,12 +24,9 @@ import com.ems.user.service.UserService;
 @RequestMapping("/api/user")
 public class UserController {
 
-	// User controller --> user service --> user,address, education repos
-	// (create,update,delete through user)
-
 	@Autowired
 	private UserService userServiceImpl;
-	
+
 	@GetMapping(value = "/test", produces = "application/json")
 	public String testApi() {
 
@@ -33,6 +37,44 @@ public class UserController {
 	public UserResponse createUser(@Valid @RequestBody UserRequest userRequest) {
 
 		return userServiceImpl.createUser(userRequest);
+	}
+
+	@PutMapping(value = "/{userId}", produces = "application/json")
+	public UserResponse updateUser(@Valid @RequestBody UserUpdateRequest userUpdateRequest,
+			@PathVariable String userId) {
+
+		return userServiceImpl.updateUser(userUpdateRequest, userId);
+	}
+
+	@DeleteMapping(value = "/{userId}", produces = "application/json")
+	public boolean deleteUser(@PathVariable String userId) {
+
+		return userServiceImpl.deleteUser(userId);
+	}
+
+	@GetMapping(value = "/{userId}", produces = "application/json")
+	public UserResponse getByUserId(@PathVariable String userId) {
+
+		return userServiceImpl.getByUserId(userId);
+	}
+
+	@GetMapping(produces = "application/json")
+	public HashMap<String, Object> getAllUsersByUserType(
+			@RequestParam(value = "pageNumber", defaultValue = "1") int pageNumber,
+			@RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+			@RequestParam(value = "userType", defaultValue = "EMPLOYEE") String userType) {
+
+		return userServiceImpl.getAllUsers(userType, pageNumber, pageSize);
+	}
+
+	@GetMapping(produces = "application/json")
+	public HashMap<String, Object> searchUsersByUserTypeAndFirstName(
+			@RequestParam(value = "pageNumber", defaultValue = "1") int pageNumber,
+			@RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+			@RequestParam(value = "userType", defaultValue = "EMPLOYEE") String userType,
+			@RequestParam(value = "searchQuery") String searchQuery) {
+
+		return null;
 	}
 
 }

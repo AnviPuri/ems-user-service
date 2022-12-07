@@ -1,88 +1,73 @@
-package com.ems.user.entity;
+package com.ems.user.dto.request;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
+import javax.validation.constraints.NotBlank;
 
-import org.hibernate.annotations.GenericGenerator;
+import com.sun.istack.NotNull;
 
-@Entity
-public class User {
+public class UserUpdateRequest {
 
-	@Id
-	@GenericGenerator(name = "user_id", strategy = "com.ems.user.id.generator.UserIdGenerator")
-	@GeneratedValue(generator = "user_id")
-	@Column(name = "user_id")
-	private String userId;
+	private String userId = "";
 
-	@Column(name = "employee_id")
-	private String employeeId;
+	private String employeeId = "";
 
-	@Column(name = "user_type")
+	@NotNull
+	@NotBlank(message = "User Type cant'be empty")
 	private String userType;
 
-	@Column(name = "first_name")
+	@NotNull
+	@NotBlank(message = "First Name cant'be empty")
 	private String firstName;
 
-	@Column(name = "middle_name")
-	private String middleName;
+	private String middleName = "";
 
-	@Column(name = "last_name")
-	private String lastName;
+	private String lastName = "";
 
-	private String gender;
+	private String gender = "";
 
-	@Column(name = "org_email")
-	private String orgEmail;
+	// add validation check on if email id is valid?
+	private String orgEmail = "";
 
-	@Column(name = "personal_email")
+	@NotNull
+	@NotBlank(message = "Personal Email cant'be empty")
 	private String personalEmail;
 
-	@Column(name = "country_code")
+	// add validation check on phone Number if it is valid?
+	@NotNull
+	@NotBlank(message = "Country Code cant'be empty")
 	private String countryCode;
 
-	@Column(name = "phone_number")
+	@NotNull
+	@NotBlank(message = "Phone Number cant'be empty")
 	private String phoneNumber;
 
-	@Column(name = "official_designation")
-	private String officialDesignation;
+	private String officialDesignation = "";
 
-	@Column(name = "date_of_joining")
-	private long dateOfJoining;
+	private long dateOfJoining = 0;
 
-	@Column(name = "date_of_birth")
-	private long dateOfBirth;
+	private long dateOfBirth = 0;
 
-	@Column(name = "blood_group")
-	private String bloodGroup;
+	private String bloodGroup = "";
 
-	@Column(name = "marital_status")
-	private String maritalStatus;
+	private String maritalStatus = "";
 
-	@OneToMany(mappedBy = "emergencyContactParent")
-	private List<User> emergencyContacts;
+	private List<UserUpdateRequest> emergencyContactList = new ArrayList<>();
 
-	@ManyToOne(cascade = { CascadeType.ALL })
-	@JoinColumn(name = "emergency_contact_parent_id")
-	private User emergencyContactParent;
-
+	@NotNull
+	@NotBlank(message = "Relationship cant'be empty")
 	private String relationship;
 
+	private List<AddressUpdateRequest> addressList = new ArrayList<>();
+
+	private List<EducationUpdateRequest> educationList = new ArrayList<>();
+
+	@NotNull
+	@NotBlank(message = "Status cant'be empty")
 	private String status;
 
-	@Column(name = "is_consent_accepted")
-	private boolean isConsentAccepted;
-
-	@Embedded
-	private Audit audit;
+	private boolean isConsentAccepted = false;
 
 	public String getUserId() {
 		return userId;
@@ -212,20 +197,12 @@ public class User {
 		this.maritalStatus = maritalStatus;
 	}
 
-	public List<User> getEmergencyContacts() {
-		return emergencyContacts;
+	public List<UserUpdateRequest> getEmergencyContactList() {
+		return emergencyContactList;
 	}
 
-	public void setEmergencyContacts(List<User> emergencyContacts) {
-		this.emergencyContacts = emergencyContacts;
-	}
-
-	public User getEmergencyContactParent() {
-		return emergencyContactParent;
-	}
-
-	public void setEmergencyContactParent(User emergencyContactParent) {
-		this.emergencyContactParent = emergencyContactParent;
+	public void setEmergencyContactList(List<UserUpdateRequest> emergencyContactList) {
+		this.emergencyContactList = emergencyContactList;
 	}
 
 	public String getRelationship() {
@@ -234,6 +211,22 @@ public class User {
 
 	public void setRelationship(String relationship) {
 		this.relationship = relationship;
+	}
+
+	public List<AddressUpdateRequest> getAddressList() {
+		return addressList;
+	}
+
+	public void setAddressList(List<AddressUpdateRequest> addressList) {
+		this.addressList = addressList;
+	}
+
+	public List<EducationUpdateRequest> getEducationList() {
+		return educationList;
+	}
+
+	public void setEducationList(List<EducationUpdateRequest> educationList) {
+		this.educationList = educationList;
 	}
 
 	public String getStatus() {
@@ -252,11 +245,4 @@ public class User {
 		this.isConsentAccepted = isConsentAccepted;
 	}
 
-	public Audit getAudit() {
-		return audit;
-	}
-
-	public void setAudit(Audit audit) {
-		this.audit = audit;
-	}
 }

@@ -1,13 +1,22 @@
 package com.ems.user.dto.request;
 
-public class EducationRequest {
+public class EducationUpdateRequest {
 
+	private String educationId = "";
 	private String degreeName = "";
 	private String specialisationName = "";
 	private String institutionName = "";
 	private long startDate = 0;
 	private long endDate = 0;
 	private String percentage = "";
+
+	public String getEducationId() {
+		return educationId;
+	}
+
+	public void setEducationId(String educationId) {
+		this.educationId = educationId;
+	}
 
 	public String getDegreeName() {
 		return degreeName;

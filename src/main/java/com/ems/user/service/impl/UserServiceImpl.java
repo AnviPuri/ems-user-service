@@ -1,14 +1,24 @@
 package com.ems.user.service.impl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.ems.user.dto.request.AddressRequest;
+import com.ems.user.dto.request.AddressUpdateRequest;
 import com.ems.user.dto.request.EducationRequest;
+import com.ems.user.dto.request.EducationUpdateRequest;
 import com.ems.user.dto.request.UserRequest;
+import com.ems.user.dto.request.UserUpdateRequest;
 import com.ems.user.dto.response.AddressResponse;
 import com.ems.user.dto.response.EducationResponse;
 import com.ems.user.dto.response.UserResponse;
@@ -22,6 +32,8 @@ import com.ems.user.repo.AddressRepo;
 import com.ems.user.repo.EducationRepo;
 import com.ems.user.repo.UserRepo;
 import com.ems.user.service.UserService;
+import com.ems.user.utility.AuditUtility;
+import com.ems.user.utility.EmsUtility;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -38,6 +50,7 @@ public class UserServiceImpl implements UserService {
 	public UserResponse createUser(UserRequest userRequest) {
 
 		// validate user request
+		// 1. Address can't have more than 2 address - one current and one permanent
 
 		List<AddressRequest> addressRequestList = userRequest.getAddressList();
 		List<EducationRequest> educationRequestList = userRequest.getEducationList();
@@ -47,9 +60,13 @@ public class UserServiceImpl implements UserService {
 		user = UserMapper.userRequestToEntityMapper(userRequest);
 		user = userRepository.save(user);
 
-		List<AddressResponse> addressResponseList = this.createAddress(addressRequestList);
-		List<EducationResponse> educationResponseList = this.createEducation(educationRequestList);
-		List<UserResponse> emergencyContactResponseList = this.createEmergencyUser(emergencyContactRequestList);
+		List<AddressResponse> addressResponseList = new ArrayList<>();
+		List<EducationResponse> educationResponseList = new ArrayList<>();
+		List<UserResponse> emergencyContactResponseList = new ArrayList<>();
+
+		addressResponseList = this.createAddress(addressRequestList, user);
+		educationResponseList = this.createEducation(educationRequestList, user);
+		emergencyContactResponseList = this.createEmergencyUser(emergencyContactRequestList, user);
 
 		UserResponse userResponse = new UserResponse();
 		userResponse = UserMapper.userEntityToResponseMapper(user);
@@ -60,60 +77,227 @@ public class UserServiceImpl implements UserService {
 		return userResponse;
 	}
 
-	public List<UserResponse> createEmergencyUser(List<UserRequest> userRequestList) {
+	@Override
+	public UserResponse updateUser(UserUpdateRequest userUpdateRequest, String userId) {
 
-		List<UserResponse> userResponseList = new ArrayList<>();
+		// validate user request
+		// 1. Address can't have more than 2 address - one current and one permanent
 
-		if (!userResponseList.isEmpty()) {
-			for (UserRequest userRequest : userRequestList) {
+		User user = new User();
+		Optional<User> optionalUser = userRepository.findById(userId);
+		if (optionalUser.isPresent()) {
+			user = optionalUser.get();
+			user = UserMapper.userUpdateRequestToEntityMapper(userUpdateRequest, user);
+			user = userRepository.save(user);
 
-				// validate emergency user request
+			List<AddressResponse> addressResponseList = new ArrayList<>();
+			List<EducationResponse> educationResponseList = new ArrayList<>();
+			List<UserResponse> emergencyContactResponseList = new ArrayList<>();
+			addressResponseList = this.updateAddress(userUpdateRequest.getAddressList(), user);
+			educationResponseList = this.updateEducation(userUpdateRequest.getEducationList(), user);
+			emergencyContactResponseList = this.updateEmergencyUser(userUpdateRequest.getEmergencyContactList(), user);
 
-				User user = new User();
-				user = UserMapper.userRequestToEntityMapper(userRequest);
-				user = userRepository.save(user);
+			UserResponse userResponse = new UserResponse();
+			userResponse = UserMapper.userEntityToResponseMapper(user);
+			userResponse.setAddressResponseList(addressResponseList);
+			userResponse.setEducationResponseList(educationResponseList);
+			userResponse.setEmergencyContactResponseList(emergencyContactResponseList);
 
-				UserResponse userResponse = new UserResponse();
-				userResponse = UserMapper.userEntityToResponseMapper(user);
-				userResponseList.add(userResponse);
+			return userResponse;
+		}
+
+		return null;
+	}
+
+	@Override
+	public boolean deleteUser(String userId) {
+
+		Optional<User> optionalUser = userRepository.findById(userId);
+		User deletedUser = new User();
+		boolean isDeleted = false;
+		if (optionalUser.isPresent()) {
+			deletedUser = optionalUser.get();
+			deletedUser.setAudit(AuditUtility.deleteApiAuditBuild(deletedUser.getAudit()));
+			deletedUser = userRepository.save(deletedUser);
+			if (deletedUser.getAudit().isActive())
+				isDeleted = false;
+			else {
+				isDeleted = true;
+				this.deleteAddressByUser(deletedUser);
+				// delete education
+				this.deleteEmergencyContactByUser(deletedUser);
 			}
 		}
-		return userResponseList;
+		return isDeleted;
 	}
 
 	@Override
-	public UserResponse updateUser(UserRequest userRequest) {
+	public UserResponse getByUserId(String userId) {
+
+		Optional<User> optionalUser = userRepository.findById(userId);
+		User user = new User();
+		UserResponse userResponse = new UserResponse();
+		if (optionalUser.isPresent()) {
+			user = optionalUser.get();
+			userResponse = UserMapper.userEntityToResponseMapper(user);
+
+			List<AddressResponse> addressResponseList = new ArrayList<>();
+			List<EducationResponse> educationResponseList = new ArrayList<>();
+			List<UserResponse> emergencyContactResponseList = new ArrayList<>();
+
+			addressResponseList = this.getAddressByUser(user);
+			educationResponseList = this.getEducationByUser(user);
+			emergencyContactResponseList = this.getEmergencyContactByParentUser(user);
+			userResponse.setAddressResponseList(addressResponseList);
+			userResponse.setEducationResponseList(educationResponseList);
+			userResponse.setEmergencyContactResponseList(emergencyContactResponseList);
+		}
+		return userResponse;
+	}
+
+	@Override
+	public HashMap<String, Object> getAllUsers(String userType, int pageNumber, int pageSize) {
+
+		List<User> pagedUserList = new ArrayList<>();
+		List<UserResponse> pagedUserResponseList = new ArrayList<>();
+		Sort firstNameSort = Sort.by("firstName");
+		Sort lastNameSort = Sort.by("lastName");
+		Sort groupBySort = firstNameSort.and(lastNameSort);
+		Pageable paging = PageRequest.of(pageNumber, pageSize, groupBySort);
+		Page<User> pagedResult = userRepository.findByUserType(userType, paging);
+		if (pagedResult.hasContent()) {
+			pagedUserList = pagedResult.getContent();
+		}
+		pagedUserResponseList = pagedUserList.stream()
+				.map(pagedUser -> UserMapper.userEntityToResponseMapper(pagedUser)).collect(Collectors.toList());
+		HashMap<String, Object> resultBody = new HashMap<>();
+		resultBody.put("pagedUserResponseList", pagedUserResponseList);
+		resultBody.put("totalPages", pagedResult.getTotalPages());
+		resultBody.put("totalUsers", pagedResult.getTotalElements());
+		return resultBody;
+	}
+
+	@Override
+	public HashMap<String, Object> searchUsersByUserTypeAndFirstName(int pageNumber, int pageSize, String userType,
+			String searchQuery) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public UserResponse deleteUser(UserRequest userRequest) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<UserResponse> createEmergencyUser(List<UserRequest> emergencyContactRequestList,
+			User emergencyContactParent) {
+
+		List<UserResponse> emergencyContactList = new ArrayList<>();
+		if (!emergencyContactRequestList.isEmpty()) {
+			for (UserRequest emergencyContactRequest : emergencyContactRequestList) {
+				User emergencyContact = new User();
+				UserResponse emergencyContactResponse = new UserResponse();
+				emergencyContact = UserMapper.userRequestToEntityMapper(emergencyContactRequest);
+				emergencyContact.setEmergencyContactParent(emergencyContactParent);
+				emergencyContact = userRepository.save(emergencyContact);
+				emergencyContactResponse = UserMapper.userEntityToResponseMapper(emergencyContact);
+				emergencyContactList.add(emergencyContactResponse);
+			}
+		}
+		return emergencyContactList;
 	}
 
 	@Override
-	public UserResponse getByUserId(UserRequest userRequest) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<UserResponse> updateEmergencyUser(List<UserUpdateRequest> emergencyContactUpdateRequestList,
+			User emergencyContactParent) {
+
+		List<User> savedEmergencyContactList = new ArrayList<>();
+		HashMap<String, User> emergencyContactMap = new HashMap<>();
+
+		Optional<List<User>> optionalEmergencyContactList = userRepository
+				.findByEmergencyContactParentAndAuditIsActive(emergencyContactParent, true);
+		if (optionalEmergencyContactList.isPresent()) {
+			savedEmergencyContactList = optionalEmergencyContactList.get();
+		}
+		if (!savedEmergencyContactList.isEmpty()) {
+			for (User savedEmergencyContact : savedEmergencyContactList) {
+				emergencyContactMap.put(savedEmergencyContact.getUserId(), savedEmergencyContact);
+			}
+		}
+		List<String> updatedEmergencyContactIdList = new ArrayList<>();
+		List<UserResponse> updatedEmergencyContactResponseList = new ArrayList<>();
+		if (!emergencyContactUpdateRequestList.isEmpty()) {
+			for (UserUpdateRequest emergencyContactUpdateRequest : emergencyContactUpdateRequestList) {
+				User updatedEmergencyContact = new User();
+				UserResponse updatedEmergencyContactResponse = new UserResponse();
+				updatedEmergencyContact = UserMapper.emergencyContactUpdateRequestToEntityMapper(
+						emergencyContactUpdateRequest, emergencyContactParent);
+				if (!EmsUtility.isNullOrEmpty(updatedEmergencyContact.getUserId())) {
+					updatedEmergencyContact.setAudit(AuditUtility.updateApiAuditBuild(
+							emergencyContactMap.get(updatedEmergencyContact.getUserId()).getAudit()));
+					updatedEmergencyContact = userRepository.save(updatedEmergencyContact);
+					updatedEmergencyContactResponse = UserMapper.userEntityToResponseMapper(updatedEmergencyContact);
+					updatedEmergencyContactResponseList.add(updatedEmergencyContactResponse);
+					updatedEmergencyContactIdList.add(updatedEmergencyContact.getUserId());
+				} else {
+					updatedEmergencyContact.setAudit(AuditUtility.createApiAuditBuild());
+					updatedEmergencyContact = userRepository.save(updatedEmergencyContact);
+					updatedEmergencyContactResponse = UserMapper.userEntityToResponseMapper(updatedEmergencyContact);
+					updatedEmergencyContactResponseList.add(updatedEmergencyContactResponse);
+					updatedEmergencyContactIdList.add(updatedEmergencyContact.getUserId());
+				}
+			}
+		}
+		if (!savedEmergencyContactList.isEmpty()) {
+			for (User emergencyContact : savedEmergencyContactList) {
+				if (!updatedEmergencyContactIdList.contains(emergencyContact.getUserId())) {
+					emergencyContact.setAudit(AuditUtility.deleteApiAuditBuild(emergencyContact.getAudit()));
+					userRepository.save(emergencyContact);
+				}
+			}
+		}
+		return updatedEmergencyContactResponseList;
 	}
 
 	@Override
-	public List<AddressResponse> createAddress(List<AddressRequest> addressRequestList) {
+	public void deleteEmergencyContactByUser(User user) {
+		List<User> savedEmergencyContactList = new ArrayList<>();
 
+		Optional<List<User>> optionalEmergencyContactList = userRepository
+				.findByEmergencyContactParentAndAuditIsActive(user, true);
+		if (optionalEmergencyContactList.isPresent()) {
+			savedEmergencyContactList = optionalEmergencyContactList.get();
+		}
+		if (!savedEmergencyContactList.isEmpty()) {
+			for (User emergencyContact : savedEmergencyContactList) {
+				emergencyContact.setAudit(AuditUtility.deleteApiAuditBuild(emergencyContact.getAudit()));
+				userRepository.save(emergencyContact);
+			}
+		}
+	}
+
+	@Override
+	public List<UserResponse> getEmergencyContactByParentUser(User user) {
+		List<User> savedEmergencyContactList = new ArrayList<>();
+		List<UserResponse> emergencyContactResponseList = new ArrayList<>();
+		Optional<List<User>> optionalEmergencyContactList = userRepository
+				.findByEmergencyContactParentAndAuditIsActive(user, true);
+		if (optionalEmergencyContactList.isPresent()) {
+			savedEmergencyContactList = optionalEmergencyContactList.get();
+			for (User savedEmergencyContact : savedEmergencyContactList) {
+				UserResponse emergencyContactResponse = new UserResponse();
+				emergencyContactResponse = UserMapper.userEntityToResponseMapper(savedEmergencyContact);
+				emergencyContactResponseList.add(emergencyContactResponse);
+			}
+		}
+		return emergencyContactResponseList;
+	}
+
+	@Override
+	public List<AddressResponse> createAddress(List<AddressRequest> addressRequestList, User user) {
 		List<AddressResponse> addressResponseList = new ArrayList<>();
-
 		if (!addressRequestList.isEmpty()) {
 			for (AddressRequest addressRequest : addressRequestList) {
-
-				// validate address request
-
 				Address address = new Address();
-				address = AddressMapper.addressRequestToEntityMapper(addressRequest);
-				address = addressRepository.save(address);
-
 				AddressResponse addressResponse = new AddressResponse();
+				address = AddressMapper.addressRequestToEntityMapper(addressRequest, user);
+				address = addressRepository.save(address);
 				addressResponse = AddressMapper.addressEntityToResponseMapper(address);
 				addressResponseList.add(addressResponse);
 			}
@@ -122,32 +306,98 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public List<AddressResponse> updateAddress(List<AddressRequest> addressRequestList) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<AddressResponse> updateAddress(List<AddressUpdateRequest> addressUpdateRequestList, User user) {
+
+		List<Address> savedAddressList = new ArrayList<>();
+		HashMap<String, Address> addressMap = new HashMap<>();
+
+		Optional<List<Address>> optionalAddressList = addressRepository.findByUserAndAuditIsActive(user, true);
+		if (optionalAddressList.isPresent()) {
+			savedAddressList = optionalAddressList.get();
+		}
+		if (!savedAddressList.isEmpty()) {
+			for (Address address : savedAddressList) {
+				addressMap.put(address.getAddressId(), address);
+			}
+		}
+		List<String> updatedAddressIdList = new ArrayList<>();
+		List<AddressResponse> updatedAddressResponseList = new ArrayList<>();
+		if (!addressUpdateRequestList.isEmpty()) {
+			for (AddressUpdateRequest addressUpdateRequest : addressUpdateRequestList) {
+				Address updatedAddress = new Address();
+				AddressResponse updatedAddressResponse = new AddressResponse();
+				updatedAddress = AddressMapper.addressUpdateRequestToEntityMapper(addressUpdateRequest, user);
+				if (!EmsUtility.isNullOrEmpty(updatedAddress.getAddressId())) {
+					updatedAddress.setAudit(
+							AuditUtility.updateApiAuditBuild(addressMap.get(updatedAddress.getAddressId()).getAudit()));
+					updatedAddress = addressRepository.save(updatedAddress);
+					updatedAddressResponse = AddressMapper.addressEntityToResponseMapper(updatedAddress);
+					updatedAddressResponseList.add(updatedAddressResponse);
+					updatedAddressIdList.add(updatedAddress.getAddressId());
+				} else {
+					updatedAddress.setAudit(AuditUtility.createApiAuditBuild());
+					updatedAddress = addressRepository.save(updatedAddress);
+					updatedAddressResponse = AddressMapper.addressEntityToResponseMapper(updatedAddress);
+					updatedAddressResponseList.add(updatedAddressResponse);
+					updatedAddressIdList.add(updatedAddress.getAddressId());
+				}
+			}
+		}
+		if (!savedAddressList.isEmpty()) {
+			for (Address address : savedAddressList) {
+				if (!updatedAddressIdList.contains(address.getAddressId())) {
+					this.deleteAddress(address);
+				}
+			}
+		}
+		return updatedAddressResponseList;
 	}
 
 	@Override
-	public boolean deleteAddress(AddressRequest addressRequest) {
-		// TODO Auto-generated method stub
-		return false;
+	public void deleteAddress(Address address) {
+		address.setAudit(AuditUtility.deleteApiAuditBuild(address.getAudit()));
+		address = addressRepository.save(address);
 	}
 
 	@Override
-	public List<EducationResponse> createEducation(List<EducationRequest> educationRequestList) {
+	public void deleteAddressByUser(User user) {
+		List<Address> savedAddressList = new ArrayList<>();
 
+		Optional<List<Address>> optionalAddressList = addressRepository.findByUserAndAuditIsActive(user, true);
+		if (optionalAddressList.isPresent()) {
+			savedAddressList = optionalAddressList.get();
+			for (Address address : savedAddressList) {
+				this.deleteAddress(address);
+			}
+		}
+	}
+
+	@Override
+	public List<AddressResponse> getAddressByUser(User user) {
+
+		List<Address> savedAddressList = new ArrayList<>();
+		List<AddressResponse> addressResponseList = new ArrayList<>();
+		Optional<List<Address>> optionalAddressList = addressRepository.findByUserAndAuditIsActive(user, true);
+		if (optionalAddressList.isPresent()) {
+			savedAddressList = optionalAddressList.get();
+			for (Address savedAddress : savedAddressList) {
+				AddressResponse savedAddressResponse = new AddressResponse();
+				savedAddressResponse = AddressMapper.addressEntityToResponseMapper(savedAddress);
+				addressResponseList.add(savedAddressResponse);
+			}
+		}
+		return addressResponseList;
+	}
+
+	@Override
+	public List<EducationResponse> createEducation(List<EducationRequest> educationRequestList, User user) {
 		List<EducationResponse> educationResponseList = new ArrayList<>();
-
 		if (!educationRequestList.isEmpty()) {
 			for (EducationRequest educationRequest : educationRequestList) {
-
-				// validate education request
-
 				Education education = new Education();
-				education = EducationMapper.educationRequestToEntityMapper(educationRequest);
-				education = educationRepository.save(education);
-
 				EducationResponse educationResponse = new EducationResponse();
+				education = EducationMapper.educationRequestToEntityMapper(educationRequest, user);
+				education = educationRepository.save(education);
 				educationResponse = EducationMapper.educationEntityToResponseMapper(education);
 				educationResponseList.add(educationResponse);
 			}
@@ -155,4 +405,87 @@ public class UserServiceImpl implements UserService {
 		return educationResponseList;
 	}
 
+	@Override
+	public List<EducationResponse> updateEducation(List<EducationUpdateRequest> educationUpdateRequestList, User user) {
+
+		List<Education> savedEducationList = new ArrayList<>();
+		HashMap<String, Education> educationMap = new HashMap<>();
+
+		Optional<List<Education>> optionalEducationList = educationRepository.findByUserAndAuditIsActive(user, true);
+		if (optionalEducationList.isPresent()) {
+			savedEducationList = optionalEducationList.get();
+		}
+		if (!savedEducationList.isEmpty()) {
+			for (Education education : savedEducationList) {
+				educationMap.put(education.getEducationId(), education);
+			}
+		}
+		List<String> updatedEducationIdList = new ArrayList<>();
+		List<EducationResponse> updatedEducationResponseList = new ArrayList<>();
+		if (!educationUpdateRequestList.isEmpty()) {
+			for (EducationUpdateRequest educationUpdateRequest : educationUpdateRequestList) {
+				Education updatedEducation = new Education();
+				EducationResponse updatedEducationResponse = new EducationResponse();
+				updatedEducation = EducationMapper.educationUpdateRequestToEntityMapper(educationUpdateRequest, user);
+				if (!EmsUtility.isNullOrEmpty(updatedEducation.getEducationId())) {
+					updatedEducation.setAudit(AuditUtility
+							.updateApiAuditBuild(educationMap.get(updatedEducation.getEducationId()).getAudit()));
+					updatedEducation = educationRepository.save(updatedEducation);
+					updatedEducationResponse = EducationMapper.educationEntityToResponseMapper(updatedEducation);
+					updatedEducationResponseList.add(updatedEducationResponse);
+					updatedEducationIdList.add(updatedEducation.getEducationId());
+				} else {
+					updatedEducation.setAudit(AuditUtility.createApiAuditBuild());
+					updatedEducation = educationRepository.save(updatedEducation);
+					updatedEducationResponse = EducationMapper.educationEntityToResponseMapper(updatedEducation);
+					updatedEducationResponseList.add(updatedEducationResponse);
+					updatedEducationIdList.add(updatedEducation.getEducationId());
+				}
+			}
+		}
+		if (!savedEducationList.isEmpty()) {
+			for (Education education : savedEducationList) {
+				if (!updatedEducationIdList.contains(education.getEducationId())) {
+					this.deleteEducation(education);
+				}
+			}
+		}
+		return updatedEducationResponseList;
+	}
+
+	@Override
+	public void deleteEducation(Education education) {
+		education.setAudit(AuditUtility.deleteApiAuditBuild(education.getAudit()));
+		education = educationRepository.save(education);
+	}
+
+	@Override
+	public List<EducationResponse> getEducationByUser(User user) {
+		List<Education> savedEducationList = new ArrayList<>();
+		List<EducationResponse> educationResponseList = new ArrayList<>();
+		Optional<List<Education>> optionalEducationList = educationRepository.findByUserAndAuditIsActive(user, true);
+		if (optionalEducationList.isPresent()) {
+			savedEducationList = optionalEducationList.get();
+			for (Education savedEducation : savedEducationList) {
+				EducationResponse savedEducationResponse = new EducationResponse();
+				savedEducationResponse = EducationMapper.educationEntityToResponseMapper(savedEducation);
+				educationResponseList.add(savedEducationResponse);
+			}
+		}
+		return educationResponseList;
+	}
+
+	@Override
+	public void deleteEducationByUser(User user) {
+		List<Education> savedEducationList = new ArrayList<>();
+
+		Optional<List<Education>> optionalEducationList = educationRepository.findByUserAndAuditIsActive(user, true);
+		if (optionalEducationList.isPresent()) {
+			savedEducationList = optionalEducationList.get();
+			for (Education education : savedEducationList) {
+				this.deleteEducation(education);
+			}
+		}
+
+	}
 }
