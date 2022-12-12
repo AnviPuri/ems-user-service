@@ -27,12 +27,6 @@ public class UserController {
 	@Autowired
 	private UserService userServiceImpl;
 
-	@GetMapping(value = "/test", produces = "application/json")
-	public String testApi() {
-
-		return "TEST SUCCEEDED";
-	}
-
 	@PostMapping(produces = "application/json")
 	public UserResponse createUser(@Valid @RequestBody UserRequest userRequest) {
 
@@ -58,7 +52,7 @@ public class UserController {
 		return userServiceImpl.getByUserId(userId);
 	}
 
-	@GetMapping(produces = "application/json")
+	@GetMapping(value = "/all", produces = "application/json")
 	public HashMap<String, Object> getAllUsersByUserType(
 			@RequestParam(value = "pageNumber", defaultValue = "1") int pageNumber,
 			@RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
@@ -67,14 +61,14 @@ public class UserController {
 		return userServiceImpl.getAllUsers(userType, pageNumber, pageSize);
 	}
 
-	@GetMapping(produces = "application/json")
+	@GetMapping(value = "/all/search", produces = "application/json")
 	public HashMap<String, Object> searchUsersByUserTypeAndFirstName(
 			@RequestParam(value = "pageNumber", defaultValue = "1") int pageNumber,
 			@RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
 			@RequestParam(value = "userType", defaultValue = "EMPLOYEE") String userType,
 			@RequestParam(value = "searchQuery") String searchQuery) {
 
-		return null;
+		return userServiceImpl.searchUsersByUserTypeAndFirstName(pageNumber, pageSize, userType, searchQuery);
 	}
 
 }

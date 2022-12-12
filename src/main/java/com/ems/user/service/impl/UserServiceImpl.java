@@ -124,7 +124,7 @@ public class UserServiceImpl implements UserService {
 			else {
 				isDeleted = true;
 				this.deleteAddressByUser(deletedUser);
-				// delete education
+				this.deleteEducationByUser(deletedUser);
 				this.deleteEmergencyContactByUser(deletedUser);
 			}
 		}
@@ -137,7 +137,7 @@ public class UserServiceImpl implements UserService {
 		Optional<User> optionalUser = userRepository.findById(userId);
 		User user = new User();
 		UserResponse userResponse = new UserResponse();
-		if (optionalUser.isPresent()) {
+		if (optionalUser.isPresent() && optionalUser.get().getAudit().isActive()) {
 			user = optionalUser.get();
 			userResponse = UserMapper.userEntityToResponseMapper(user);
 
@@ -164,7 +164,7 @@ public class UserServiceImpl implements UserService {
 		Sort lastNameSort = Sort.by("lastName");
 		Sort groupBySort = firstNameSort.and(lastNameSort);
 		Pageable paging = PageRequest.of(pageNumber, pageSize, groupBySort);
-		Page<User> pagedResult = userRepository.findByUserType(userType, paging);
+		Page<User> pagedResult = userRepository.findByUserTypeAndAuditIsActive(userType, true, paging);
 		if (pagedResult.hasContent()) {
 			pagedUserList = pagedResult.getContent();
 		}
@@ -180,8 +180,27 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public HashMap<String, Object> searchUsersByUserTypeAndFirstName(int pageNumber, int pageSize, String userType,
 			String searchQuery) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		// refine search query to include search by last name as well
+		
+		List<User> pagedUserList = new ArrayList<>();
+		List<UserResponse> pagedUserResponseList = new ArrayList<>();
+		Sort firstNameSort = Sort.by("firstName");
+		Sort lastNameSort = Sort.by("lastName");
+		Sort groupBySort = firstNameSort.and(lastNameSort);
+		Pageable paging = PageRequest.of(pageNumber, pageSize, groupBySort);
+		Page<User> pagedResult = userRepository.findByUserTypeAndAuditIsActiveAndFirstNameContainingIgnoreCase(userType, true,
+				searchQuery, paging);
+		if (pagedResult.hasContent()) {
+			pagedUserList = pagedResult.getContent();
+		}
+		pagedUserResponseList = pagedUserList.stream()
+				.map(pagedUser -> UserMapper.userEntityToResponseMapper(pagedUser)).collect(Collectors.toList());
+		HashMap<String, Object> resultBody = new HashMap<>();
+		resultBody.put("pagedUserResponseList", pagedUserResponseList);
+		resultBody.put("totalPages", pagedResult.getTotalPages());
+		resultBody.put("totalUsers", pagedResult.getTotalElements());
+		return resultBody;
 	}
 
 	@Override

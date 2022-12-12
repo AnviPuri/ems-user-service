@@ -3,8 +3,6 @@ package com.ems.user.service;
 import java.util.HashMap;
 import java.util.List;
 
-import org.springframework.web.bind.annotation.RequestParam;
-
 import com.ems.user.dto.request.AddressRequest;
 import com.ems.user.dto.request.AddressUpdateRequest;
 import com.ems.user.dto.request.EducationRequest;
