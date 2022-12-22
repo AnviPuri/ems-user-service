@@ -5,7 +5,8 @@ import com.ems.user.dto.request.UserUpdateRequest;
 import com.ems.user.dto.response.UserResponse;
 import com.ems.user.entity.User;
 import com.ems.user.utility.AuditUtility;
-import com.ems.user.utility.EmsUtility;
+
+import ems.utility.util.EmsUtility;
 
 public class UserMapper {
 

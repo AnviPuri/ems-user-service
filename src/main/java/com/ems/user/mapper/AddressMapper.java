@@ -6,7 +6,8 @@ import com.ems.user.dto.response.AddressResponse;
 import com.ems.user.entity.Address;
 import com.ems.user.entity.User;
 import com.ems.user.utility.AuditUtility;
-import com.ems.user.utility.EmsUtility;
+
+import ems.utility.util.EmsUtility;
 
 public class AddressMapper {
 

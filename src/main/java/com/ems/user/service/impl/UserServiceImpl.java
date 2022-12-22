@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,7 +34,9 @@ import com.ems.user.repo.EducationRepo;
 import com.ems.user.repo.UserRepo;
 import com.ems.user.service.UserService;
 import com.ems.user.utility.AuditUtility;
-import com.ems.user.utility.EmsUtility;
+
+import ems.utility.logger.EmsLogger;
+import ems.utility.util.EmsUtility;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -47,10 +50,14 @@ public class UserServiceImpl implements UserService {
 	@Autowired
 	private AddressRepo addressRepository;
 
+	private Logger logger = EmsLogger.getLogger(UserServiceImpl.class.getName());
+
 	public UserResponse createUser(UserRequest userRequest) {
 
 		// validate user request
 		// 1. Address can't have more than 2 address - one current and one permanent
+
+		EmsLogger.log("CREATE USER WITH REQUEST : " + EmsUtility.toJsonString(userRequest), logger);
 
 		List<AddressRequest> addressRequestList = userRequest.getAddressList();
 		List<EducationRequest> educationRequestList = userRequest.getEducationList();
@@ -83,6 +90,8 @@ public class UserServiceImpl implements UserService {
 		// validate user request
 		// 1. Address can't have more than 2 address - one current and one permanent
 
+		EmsLogger.log("UPDATE USER WITH REQUEST : " + EmsUtility.toJsonString(userUpdateRequest), logger);
+
 		User user = new User();
 		Optional<User> optionalUser = userRepository.findById(userId);
 		if (optionalUser.isPresent()) {
@@ -112,6 +121,8 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public boolean deleteUser(String userId) {
 
+		EmsLogger.log("DELETE USER : " + userId, logger);
+
 		Optional<User> optionalUser = userRepository.findById(userId);
 		User deletedUser = new User();
 		boolean isDeleted = false;
@@ -133,6 +144,8 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public UserResponse getByUserId(String userId) {
+
+		EmsLogger.log("GET USER : " + userId, logger);
 
 		Optional<User> optionalUser = userRepository.findById(userId);
 		User user = new User();
@@ -158,6 +171,8 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public HashMap<String, Object> getAllUsers(String userType, int pageNumber, int pageSize) {
 
+		EmsLogger.log("GET ALL USERS WITH USER_TYPE " + userType, logger);
+
 		List<User> pagedUserList = new ArrayList<>();
 		List<UserResponse> pagedUserResponseList = new ArrayList<>();
 		Sort firstNameSort = Sort.by("firstName");
@@ -180,17 +195,19 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public HashMap<String, Object> searchUsersByUserTypeAndFirstName(int pageNumber, int pageSize, String userType,
 			String searchQuery) {
-		
+
 		// refine search query to include search by last name as well
-		
+
+		EmsLogger.log("SEARCH ALL USERS WITH USER_TYPE " + userType + " AND SEARCH_QUERY " + searchQuery, logger);
+
 		List<User> pagedUserList = new ArrayList<>();
 		List<UserResponse> pagedUserResponseList = new ArrayList<>();
 		Sort firstNameSort = Sort.by("firstName");
 		Sort lastNameSort = Sort.by("lastName");
 		Sort groupBySort = firstNameSort.and(lastNameSort);
 		Pageable paging = PageRequest.of(pageNumber, pageSize, groupBySort);
-		Page<User> pagedResult = userRepository.findByUserTypeAndAuditIsActiveAndFirstNameContainingIgnoreCase(userType, true,
-				searchQuery, paging);
+		Page<User> pagedResult = userRepository.findByUserTypeAndAuditIsActiveAndFirstNameContainingIgnoreCase(userType,
+				true, searchQuery, paging);
 		if (pagedResult.hasContent()) {
 			pagedUserList = pagedResult.getContent();
 		}
@@ -206,6 +223,9 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public List<UserResponse> createEmergencyUser(List<UserRequest> emergencyContactRequestList,
 			User emergencyContactParent) {
+
+		EmsLogger.log("CREATE EMERGENCY CONTACTS : " + EmsUtility.toJsonString(emergencyContactRequestList)
+				+ " FOR USER : " + emergencyContactParent.getUserId(), logger);
 
 		List<UserResponse> emergencyContactList = new ArrayList<>();
 		if (!emergencyContactRequestList.isEmpty()) {
@@ -225,6 +245,9 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public List<UserResponse> updateEmergencyUser(List<UserUpdateRequest> emergencyContactUpdateRequestList,
 			User emergencyContactParent) {
+
+		EmsLogger.log("UPDATE EMERGENCY CONTACTS : " + EmsUtility.toJsonString(emergencyContactUpdateRequestList)
+				+ " FOR USER : " + emergencyContactParent.getUserId(), logger);
 
 		List<User> savedEmergencyContactList = new ArrayList<>();
 		HashMap<String, User> emergencyContactMap = new HashMap<>();
@@ -276,6 +299,9 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public void deleteEmergencyContactByUser(User user) {
+
+		EmsLogger.log("DELETE EMERGENCY CONTACTS FOR USER : " + EmsUtility.toJsonString(user), logger);
+
 		List<User> savedEmergencyContactList = new ArrayList<>();
 
 		Optional<List<User>> optionalEmergencyContactList = userRepository
@@ -293,6 +319,9 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public List<UserResponse> getEmergencyContactByParentUser(User user) {
+
+		EmsLogger.log("GET EMERGENCY CONTACTS FOR USER : " + user.getUserId(), logger);
+
 		List<User> savedEmergencyContactList = new ArrayList<>();
 		List<UserResponse> emergencyContactResponseList = new ArrayList<>();
 		Optional<List<User>> optionalEmergencyContactList = userRepository
@@ -310,6 +339,11 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public List<AddressResponse> createAddress(List<AddressRequest> addressRequestList, User user) {
+
+		EmsLogger.log(
+				"CREATE ADDRESS : " + EmsUtility.toJsonString(addressRequestList) + " FOR USER : " + user.getUserId(),
+				logger);
+
 		List<AddressResponse> addressResponseList = new ArrayList<>();
 		if (!addressRequestList.isEmpty()) {
 			for (AddressRequest addressRequest : addressRequestList) {
@@ -326,6 +360,9 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public List<AddressResponse> updateAddress(List<AddressUpdateRequest> addressUpdateRequestList, User user) {
+
+		EmsLogger.log("UPDATE ADDRESS : " + EmsUtility.toJsonString(addressUpdateRequestList) + " FOR USER : "
+				+ user.getUserId(), logger);
 
 		List<Address> savedAddressList = new ArrayList<>();
 		HashMap<String, Address> addressMap = new HashMap<>();
@@ -374,12 +411,18 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public void deleteAddress(Address address) {
+
+		EmsLogger.log("DELETE ADDRESS : " + address.getAddressId(), logger);
+
 		address.setAudit(AuditUtility.deleteApiAuditBuild(address.getAudit()));
 		address = addressRepository.save(address);
 	}
 
 	@Override
 	public void deleteAddressByUser(User user) {
+
+		EmsLogger.log("DELETE ADDRESS FOR USER : " + user.getUserId(), logger);
+
 		List<Address> savedAddressList = new ArrayList<>();
 
 		Optional<List<Address>> optionalAddressList = addressRepository.findByUserAndAuditIsActive(user, true);
@@ -393,6 +436,8 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public List<AddressResponse> getAddressByUser(User user) {
+
+		EmsLogger.log("GET ADDRESS FOR USER : " + user.getUserId(), logger);
 
 		List<Address> savedAddressList = new ArrayList<>();
 		List<AddressResponse> addressResponseList = new ArrayList<>();
@@ -410,6 +455,10 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public List<EducationResponse> createEducation(List<EducationRequest> educationRequestList, User user) {
+
+		EmsLogger.log("CREATE EDUCATION : " + EmsUtility.toJsonString(educationRequestList) + " FOR USER : "
+				+ user.getUserId(), logger);
+
 		List<EducationResponse> educationResponseList = new ArrayList<>();
 		if (!educationRequestList.isEmpty()) {
 			for (EducationRequest educationRequest : educationRequestList) {
@@ -426,6 +475,9 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public List<EducationResponse> updateEducation(List<EducationUpdateRequest> educationUpdateRequestList, User user) {
+
+		EmsLogger.log("UPDATE EDUCATION : " + EmsUtility.toJsonString(educationUpdateRequestList) + " FOR USER : "
+				+ user.getUserId(), logger);
 
 		List<Education> savedEducationList = new ArrayList<>();
 		HashMap<String, Education> educationMap = new HashMap<>();
@@ -474,12 +526,18 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public void deleteEducation(Education education) {
+
+		EmsLogger.log("DELETE EDUCATION : " + education.getEducationId(), logger);
+
 		education.setAudit(AuditUtility.deleteApiAuditBuild(education.getAudit()));
 		education = educationRepository.save(education);
 	}
 
 	@Override
 	public List<EducationResponse> getEducationByUser(User user) {
+
+		EmsLogger.log("GET EDUCATION FOR USER : " + user.getUserId(), logger);
+
 		List<Education> savedEducationList = new ArrayList<>();
 		List<EducationResponse> educationResponseList = new ArrayList<>();
 		Optional<List<Education>> optionalEducationList = educationRepository.findByUserAndAuditIsActive(user, true);
@@ -496,6 +554,9 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public void deleteEducationByUser(User user) {
+
+		EmsLogger.log("DELETE EDUCATION FOR USER : " + user.getUserId(), logger);
+
 		List<Education> savedEducationList = new ArrayList<>();
 
 		Optional<List<Education>> optionalEducationList = educationRepository.findByUserAndAuditIsActive(user, true);

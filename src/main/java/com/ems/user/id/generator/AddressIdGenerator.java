@@ -6,7 +6,8 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 
-import com.ems.user.utility.EmsUtility;
+import ems.utility.util.EmsUtility;
+
 
 public class AddressIdGenerator implements IdentifierGenerator {
 

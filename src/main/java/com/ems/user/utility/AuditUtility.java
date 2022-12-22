@@ -2,6 +2,8 @@ package com.ems.user.utility;
 
 import com.ems.user.entity.Audit;
 
+import ems.utility.util.EmsUtility;
+
 public class AuditUtility {
 
 	public static Audit createApiAuditBuild() {
