@@ -193,6 +193,25 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
+	public List<UserResponse> getAllUsers(List<String> userIdList) {
+
+		EmsLogger.log("GET ALL USERS WITH REQUEST : " + EmsUtility.toJsonString(userIdList), logger);
+
+		List<User> userList = new ArrayList<>();
+		List<UserResponse> userResponseList = new ArrayList<>();
+
+		Optional<List<User>> optionalUserList = userRepository.findByUserIdInAndAuditIsActive(userIdList, true);
+		if (optionalUserList.isPresent() && !optionalUserList.get().isEmpty()) {
+			userList = optionalUserList.get();
+			userResponseList = userList.stream().map(user -> UserMapper.userEntityToResponseMapper(user))
+					.collect(Collectors.toList());
+		}
+
+		EmsLogger.log(EmsUtility.toJsonString(userResponseList), logger);
+		return userResponseList;
+	}
+
+	@Override
 	public HashMap<String, Object> searchUsersByUserTypeAndFirstName(int pageNumber, int pageSize, String userType,
 			String searchQuery) {
 

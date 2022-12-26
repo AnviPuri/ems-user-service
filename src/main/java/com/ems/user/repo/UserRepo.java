@@ -20,4 +20,6 @@ public interface UserRepo extends JpaRepository<User, String> {
 	Page<User> findByUserTypeAndAuditIsActiveAndFirstNameContainingIgnoreCase(String userType, boolean isActive,
 			String firstName, Pageable pageable);
 
+	Optional<List<User>> findByUserIdInAndAuditIsActive(List<String> userIdList, boolean isActive);
+
 }

@@ -28,6 +28,8 @@ public interface UserService {
 
 	public HashMap<String, Object> getAllUsers(String userType, int pageNumber, int pageSize);
 
+	public List<UserResponse> getAllUsers(List<String> userIdList);
+
 	public HashMap<String, Object> searchUsersByUserTypeAndFirstName(int pageNumber, int pageSize, String userType,
 			String searchQuery);
 

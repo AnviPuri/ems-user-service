@@ -1,6 +1,7 @@
 package com.ems.user.controller;
 
 import java.util.HashMap;
+import java.util.List;
 
 import javax.validation.Valid;
 
@@ -52,7 +53,7 @@ public class UserController {
 		return userServiceImpl.getByUserId(userId);
 	}
 
-	@GetMapping(value = "/all", produces = "application/json")
+	@GetMapping(value = "/all/user-type", produces = "application/json")
 	public HashMap<String, Object> getAllUsersByUserType(
 			@RequestParam(value = "pageNumber", defaultValue = "1") int pageNumber,
 			@RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
@@ -69,6 +70,12 @@ public class UserController {
 			@RequestParam(value = "searchQuery") String searchQuery) {
 
 		return userServiceImpl.searchUsersByUserTypeAndFirstName(pageNumber, pageSize, userType, searchQuery);
+	}
+
+	@GetMapping(value = "/all", produces = "application/json")
+	public List<UserResponse> getAllUsers(@RequestParam List<String> userIdList) {
+
+		return userServiceImpl.getAllUsers(userIdList);
 	}
 
 }
