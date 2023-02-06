@@ -9,6 +9,21 @@ public class AddressRequest {
 	private String country = "";
 	private String pinCode = "";
 
+	public AddressRequest() {
+		super();
+	}
+
+	public AddressRequest(String addressType, String streetAddress, String city, String state, String country,
+			String pinCode) {
+		super();
+		this.addressType = addressType;
+		this.streetAddress = streetAddress;
+		this.city = city;
+		this.state = state;
+		this.country = country;
+		this.pinCode = pinCode;
+	}
+
 	public String getAddressType() {
 		return addressType;
 	}

@@ -173,22 +173,31 @@ public class UserServiceImpl implements UserService {
 
 		EmsLogger.log("GET ALL USERS WITH USER_TYPE " + userType, logger);
 
+		HashMap<String, Object> resultBody = new HashMap<>();
 		List<User> pagedUserList = new ArrayList<>();
-		List<UserResponse> pagedUserResponseList = new ArrayList<>();
+		List<UserResponse> userResponseList = new ArrayList<>();
 		Sort firstNameSort = Sort.by("firstName");
 		Sort lastNameSort = Sort.by("lastName");
 		Sort groupBySort = firstNameSort.and(lastNameSort);
-		Pageable paging = PageRequest.of(pageNumber, pageSize, groupBySort);
-		Page<User> pagedResult = userRepository.findByUserTypeAndAuditIsActive(userType, true, paging);
-		if (pagedResult.hasContent()) {
-			pagedUserList = pagedResult.getContent();
+
+		if (pageNumber == 0) {
+			List<User> sortedResult = userRepository.findByUserTypeAndAuditIsActive(userType, true, groupBySort);
+			userResponseList = sortedResult.stream().map(user -> UserMapper.userEntityToResponseMapper(user))
+					.collect(Collectors.toList());
+		} else {
+			Pageable paging = PageRequest.of(pageNumber, pageSize, groupBySort);
+			Page<User> pagedResult = userRepository.findByUserTypeAndAuditIsActive(userType, true, paging);
+			if (pagedResult.hasContent()) {
+				pagedUserList = pagedResult.getContent();
+			}
+			userResponseList = pagedUserList.stream().map(pagedUser -> UserMapper.userEntityToResponseMapper(pagedUser))
+					.collect(Collectors.toList());
+
+			resultBody.put("totalPages", pagedResult.getTotalPages());
+			resultBody.put("totalUsers", pagedResult.getTotalElements());
 		}
-		pagedUserResponseList = pagedUserList.stream()
-				.map(pagedUser -> UserMapper.userEntityToResponseMapper(pagedUser)).collect(Collectors.toList());
-		HashMap<String, Object> resultBody = new HashMap<>();
-		resultBody.put("pagedUserResponseList", pagedUserResponseList);
-		resultBody.put("totalPages", pagedResult.getTotalPages());
-		resultBody.put("totalUsers", pagedResult.getTotalElements());
+
+		resultBody.put("userResponseList", userResponseList);
 		return resultBody;
 	}
 
@@ -207,7 +216,6 @@ public class UserServiceImpl implements UserService {
 					.collect(Collectors.toList());
 		}
 
-		EmsLogger.log(EmsUtility.toJsonString(userResponseList), logger);
 		return userResponseList;
 	}
 

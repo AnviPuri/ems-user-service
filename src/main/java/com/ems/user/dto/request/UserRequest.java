@@ -70,6 +70,56 @@ public class UserRequest {
 
 	private boolean isConsentAccepted = false;
 
+	public UserRequest() {
+
+	}
+
+	public UserRequest(String employeeId, @NotBlank(message = "User Type cant'be empty") String userType,
+			@NotBlank(message = "First Name cant'be empty") String firstName, String middleName, String lastName,
+			String gender, String orgEmail, @NotBlank(message = "Personal Email cant'be empty") String personalEmail,
+			@NotBlank(message = "Country Code cant'be empty") String countryCode,
+			@NotBlank(message = "Phone Number cant'be empty") String phoneNumber, String officialDesignation,
+			long dateOfJoining, long dateOfBirth, String bloodGroup, String maritalStatus,
+			List<UserRequest> emergencyContactList,
+			@NotBlank(message = "Relationship cant'be empty") String relationship, List<AddressRequest> addressList,
+			List<EducationRequest> educationList, @NotBlank(message = "Status cant'be empty") String status,
+			boolean isConsentAccepted) {
+		super();
+		this.employeeId = employeeId;
+		this.userType = userType;
+		this.firstName = firstName;
+		this.middleName = middleName;
+		this.lastName = lastName;
+		this.gender = gender;
+		this.orgEmail = orgEmail;
+		this.personalEmail = personalEmail;
+		this.countryCode = countryCode;
+		this.phoneNumber = phoneNumber;
+		this.officialDesignation = officialDesignation;
+		this.dateOfJoining = dateOfJoining;
+		this.dateOfBirth = dateOfBirth;
+		this.bloodGroup = bloodGroup;
+		this.maritalStatus = maritalStatus;
+		this.emergencyContactList = emergencyContactList;
+		this.relationship = relationship;
+		this.addressList = addressList;
+		this.educationList = educationList;
+		this.status = status;
+		this.isConsentAccepted = isConsentAccepted;
+	}
+
+	@Override
+	public String toString() {
+		return "UserRequest [employeeId=" + employeeId + ", userType=" + userType + ", firstName=" + firstName
+				+ ", middleName=" + middleName + ", lastName=" + lastName + ", gender=" + gender + ", orgEmail="
+				+ orgEmail + ", personalEmail=" + personalEmail + ", countryCode=" + countryCode + ", phoneNumber="
+				+ phoneNumber + ", officialDesignation=" + officialDesignation + ", dateOfJoining=" + dateOfJoining
+				+ ", dateOfBirth=" + dateOfBirth + ", bloodGroup=" + bloodGroup + ", maritalStatus=" + maritalStatus
+				+ ", emergencyContactList=" + emergencyContactList + ", relationship=" + relationship + ", addressList="
+				+ addressList + ", educationList=" + educationList + ", status=" + status + ", isConsentAccepted="
+				+ isConsentAccepted + "]";
+	}
+
 	public String getEmployeeId() {
 		return employeeId;
 	}

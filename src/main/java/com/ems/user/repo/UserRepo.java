@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +17,8 @@ public interface UserRepo extends JpaRepository<User, String> {
 	Optional<List<User>> findByEmergencyContactParentAndAuditIsActive(User user, boolean isActive);
 
 	Page<User> findByUserTypeAndAuditIsActive(String userType, boolean isActive, Pageable pageable);
+
+	List<User> findByUserTypeAndAuditIsActive(String userType, boolean isActive, Sort sort);
 
 	Page<User> findByUserTypeAndAuditIsActiveAndFirstNameContainingIgnoreCase(String userType, boolean isActive,
 			String firstName, Pageable pageable);
